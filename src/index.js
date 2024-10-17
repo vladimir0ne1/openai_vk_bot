@@ -9,7 +9,7 @@
  */
 
 export default {
-	async fetch(request, env, ctx) {
+	async fetch(request, env) {
 
 		const secretToken = request.headers.get('X-Telegram-Bot-Api-Secret-Token')
 		if (secretToken !== env.TELEGRAM_SECRET_TOKEN) {
@@ -24,6 +24,8 @@ export default {
 		const userId = incomingData.message?.from?.id || ''
 		const userMessage = incomingData.message?.text || ''
 		const chatId = incomingData.message?.chat.id || ''
+
+		console.log(incomingData);
 
 	  // 1. Проверяем, авторизован ли пользователь (по telegram_id)
 		const userAlias = await getUserAliasByTelegramId(userId, env)
