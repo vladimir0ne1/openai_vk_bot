@@ -108,7 +108,10 @@ async function getUserAliasByTelegramId(telegramId, env) {
 
 // Функция для получения алиаса по invite key
 async function getUserAliasByInviteKey(inviteKey, env) {
-	return await env.OPENAI_VK_BOT_DB.get(`authorized_users_invite_key__${inviteKey}`)
+	const alias = await env.OPENAI_VK_BOT_DB.get(`authorized_users_invite_key__${inviteKey}`)
+	await env.OPENAI_VK_BOT_DB.put(`authorized_users_used_invite_key__${inviteKey}`, alias)
+	await env.OPENAI_VK_BOT_DB.delete(`authorized_users_invite_key__${inviteKey}`)
+	return alias;
 }
 
 // Функция для авторизации пользователя через invite key
