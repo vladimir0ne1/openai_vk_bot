@@ -93,7 +93,8 @@ async function processChatGpt(incomingData, env, userApiKey){
 	const telegramResponse = {
 		method: 'sendMessage',
 		chat_id: chatId,
-		text: chatgptResponse
+		text: chatgptResponse,
+		reply_to_message_id: incomingData.message?.message_id
 	};
 
 	// Отправляем ответ пользователю через Telegram API
