@@ -11,6 +11,8 @@
 export default {
 	async fetch(request, env) {
 
+		console.log('Begin request');
+
 		const secretToken = request.headers.get('X-Telegram-Bot-Api-Secret-Token')
 		if (secretToken !== env.TELEGRAM_SECRET_TOKEN) {
 			return new Response('Unauthorized', { status: 401 });
@@ -24,6 +26,8 @@ export default {
 		const userId = incomingData.message?.from?.id || ''
 		const userMessage = incomingData.message?.text || ''
 		const chatId = incomingData.message?.chat.id || ''
+
+		console.log('Incoming Data:');
 
 		console.log(incomingData);
 
