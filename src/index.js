@@ -49,12 +49,18 @@ export default {
 			const inviteKey = userMessage.split(' ')[1]
 			const inviteAlias = await getUserAliasByInviteKey(inviteKey, env)
 
+			const telegramResponse_1 = {
+				method: 'sendMessage',
+				chat_id: chatId,
+				text: 'Invalid token. Please try again.'
+			};
 			if (inviteAlias) {
 				// Invite key валиден, создаём связь telegram_id -> alias
+				telegramResponse_1.text = 'You have been successfully authorized.'
 				await authorizeUserWithInviteKey(userId, inviteAlias, env)
-				await sendMessageToTelegram(chatId, 'You have been successfully authorized.', env.TELEGRAM_BOT_TOKEN)
+				await sendMessageToTelegram(telegramResponse_1, env)
 			} else {
-				await sendMessageToTelegram(chatId, 'Invalid token. Please try again.', env.TELEGRAM_BOT_TOKEN)
+				await sendMessageToTelegram(telegramResponse_1, env)
 			}
 
 			return new Response('OK', { status: 200 })
