@@ -10,22 +10,26 @@
 
 export default {
 	async fetch(request, env, ctx) {
-		// Получаем секретный токен из заголовка запроса
-		const secretToken = request.headers.get('X-Telegram-Bot-Api-Secret-Token')
 
-		// Проверяем, совпадает ли он с секретным токеном из переменной окружения
+		const secretToken = request.headers.get('X-Telegram-Bot-Api-Secret-Token')
 		if (secretToken !== env.TELEGRAM_SECRET_TOKEN) {
-			return new Response('Unauthorized', { status: 401 })
+			return new Response('Unauthorized', { status: 401 });
 		}
 
 		if (request.method === 'POST') {
 			const incomingData = await request.json()
 
-			// Получаем текст сообщения от пользователя из Telegram
+			// Получаем текст сообщения от пользователя
 			const userMessage = incomingData.message?.text || ''
 
-			// Вызов API OpenAI для ответа
-			const chatgptResponse = await getChatGPTResponse(userMessage, env)
+			// Проверяем, есть ли reply на предыдущее сообщение
+			let previousMessage = ''
+			if (incomingData.message?.reply_to_message?.text) {
+				previousMessage = incomingData.message.reply_to_message.text
+			}
+
+			// Вызов API OpenAI с учётом контекста
+			const chatgptResponse = await getChatGPTResponse(userMessage, env, previousMessage)
 
 			// Формируем ответ для пользователя
 			const telegramResponse = {
@@ -44,11 +48,25 @@ export default {
 	}
 }
 
-// Функция для отправки запроса в OpenAI API (ChatGPT)
-async function getChatGPTResponse(userMessage, env) {
+// Функция для отправки запроса в OpenAI API (ChatGPT) с учётом предыдущего сообщения
+async function getChatGPTResponse(userMessage, env, previousMessage) {
 	const apiKey = env.OPENAI_API_KEY // Получаем ключ из переменной окружения
 	const openaiUrl = 'https://api.openai.com/v1/chat/completions'
 
+	// Формируем сообщение для OpenAI с учётом контекста
+	const messages = [
+		{ role: 'system', content: 'Ты полезный помощник.' }
+	]
+
+	// Если есть предыдущее сообщение, включаем его в контекст
+	if (previousMessage) {
+		messages.push({ role: 'assistant', content: previousMessage })
+	}
+
+	// Добавляем текущее сообщение пользователя
+	messages.push({ role: 'user', content: userMessage })
+
+	// Отправляем запрос в OpenAI API
 	const response = await fetch(openaiUrl, {
 		method: 'POST',
 		headers: {
@@ -57,10 +75,7 @@ async function getChatGPTResponse(userMessage, env) {
 		},
 		body: JSON.stringify({
 			model: 'gpt-3.5-turbo', // Или gpt-4, если нужно
-			messages: [
-				{ role: 'system', content: 'Ты полезный помощник.' },
-				{ role: 'user', content: userMessage }
-			]
+			messages: messages
 		})
 	})
 
