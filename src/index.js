@@ -94,7 +94,8 @@ async function processChatGpt(incomingData, env, userApiKey){
 		method: 'sendMessage',
 		chat_id: chatId,
 		text: chatgptResponse,
-		reply_to_message_id: incomingData.message?.message_id
+		reply_to_message_id: incomingData.message?.message_id,
+		parse_mode: 'MarkdownV2'
 	};
 
 	// Отправляем ответ пользователю через Telegram API
