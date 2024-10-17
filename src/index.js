@@ -16,41 +16,95 @@ export default {
 			return new Response('Unauthorized', { status: 401 });
 		}
 
-		if (request.method === 'POST') {
-			const incomingData = await request.json()
+		if (request.method !== 'POST') {
+			return new Response('Invalid Request', { status: 405 });
+		}
 
-			// Получаем текст сообщения от пользователя
-			const userMessage = incomingData.message?.text || ''
+		const incomingData = await request.json()
+		const userId = incomingData.message?.from?.id || ''
+		const userMessage = incomingData.message?.text || ''
+		const chatId = incomingData.message?.chat.id || ''
 
-			// Проверяем, есть ли reply на предыдущее сообщение
-			let previousMessage = ''
-			if (incomingData.message?.reply_to_message?.text) {
-				previousMessage = incomingData.message.reply_to_message.text
+	  // 1. Проверяем, авторизован ли пользователь (по telegram_id)
+		const userAlias = await getUserAliasByTelegramId(userId, env)
+
+		if (userAlias) {
+			// Пользователь уже авторизован, используем его алиас для API ключа
+			const userApiKey = env[`OPENAI_API_KEY__${userAlias}`];
+			if(!userApiKey){
+				console.error(`missing api key for [${userAlias}]`)
 			}
 
-			// Вызов API OpenAI с учётом контекста
-			const chatgptResponse = await getChatGPTResponse(userMessage, env, previousMessage)
+			await processChatGpt(incomingData, env, userApiKey);
+			return new Response('OK', { status: 200 })
+		}
 
-			// Формируем ответ для пользователя
-			const telegramResponse = {
-				method: 'sendMessage',
-				chat_id: incomingData.message.chat.id,
-				text: chatgptResponse
+		if (userMessage.startsWith('/token')) {
+			const inviteKey = userMessage.split(' ')[1]
+			const inviteAlias = await getUserAliasByInviteKey(inviteKey, env)
+
+			if (inviteAlias) {
+				// Invite key валиден, создаём связь telegram_id -> alias
+				await authorizeUserWithInviteKey(userId, inviteAlias, env)
+				await sendMessageToTelegram(chatId, 'You have been successfully authorized.', env.TELEGRAM_BOT_TOKEN)
+			} else {
+				await sendMessageToTelegram(chatId, 'Invalid token. Please try again.', env.TELEGRAM_BOT_TOKEN)
 			}
-
-			// Отправляем ответ пользователю через Telegram API
-			await sendMessageToTelegram(telegramResponse, env)
 
 			return new Response('OK', { status: 200 })
-		} else {
-			return new Response('Invalid Request', { status: 405 })
 		}
+
+		// Если не авторизован и не ввел токен
+		// Формируем ответ для пользователя
+		const telegramResponse = {
+			method: 'sendMessage',
+			chat_id: chatId,
+			text: 'Please enter a valid invite key using /token <your_token>.'
+		};
+		await sendMessageToTelegram(telegramResponse, env)
+		return new Response('OK', { status: 200 });
 	}
 }
 
+async function processChatGpt(incomingData, env, userApiKey){
+	const userMessage = incomingData.message?.text || ''
+	const chatId = incomingData.message?.chat.id || ''
+
+	// Проверяем, есть ли reply на предыдущее сообщение
+	const previousMessage = incomingData.message?.reply_to_message?.text || ''
+
+	// Вызов API OpenAI с учётом контекста
+	const chatgptResponse = await getChatGPTResponse(userMessage, previousMessage, userApiKey);
+
+	// Формируем ответ для пользователя
+	const telegramResponse = {
+		method: 'sendMessage',
+		chat_id: chatId,
+		text: chatgptResponse
+	};
+
+	// Отправляем ответ пользователю через Telegram API
+	await sendMessageToTelegram(telegramResponse, env);
+}
+
+// Функция для получения алиаса пользователя по его Telegram ID
+async function getUserAliasByTelegramId(telegramId, env) {
+	return await env.OPENAI_VK_BOT_DB.get(`authorized_users_tg_id__${telegramId}`)
+}
+
+// Функция для получения алиаса по invite key
+async function getUserAliasByInviteKey(inviteKey, env) {
+	return await env.OPENAI_VK_BOT_DB.get(`authorized_users_invite_key__${inviteKey}`)
+}
+
+// Функция для авторизации пользователя через invite key
+async function authorizeUserWithInviteKey(telegramId, alias, env) {
+	await env.OPENAI_VK_BOT_DB.put(`authorized_users_tg_id__${telegramId}`, `OPENAI_API_KEY__${alias}`)
+}
+
 // Функция для отправки запроса в OpenAI API (ChatGPT) с учётом предыдущего сообщения
-async function getChatGPTResponse(userMessage, env, previousMessage) {
-	const apiKey = env.OPENAI_API_KEY // Получаем ключ из переменной окружения
+async function getChatGPTResponse(userMessage, previousMessage, userApiKey) {
+	const apiKey = userApiKey // Получаем ключ из переменной окружения
 	const openaiUrl = 'https://api.openai.com/v1/chat/completions'
 
 	// Формируем сообщение для OpenAI с учётом контекста
