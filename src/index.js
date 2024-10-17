@@ -37,6 +37,7 @@ export default {
 		if (userAlias) {
 			// Пользователь уже авторизован, используем его алиас для API ключа
 			const userApiKey = env[`OPENAI_API_KEY__${userAlias}`];
+
 			if(!userApiKey){
 				console.error(`missing api key for [${userAlias}]`)
 			}
@@ -111,7 +112,7 @@ async function getUserAliasByInviteKey(inviteKey, env) {
 
 // Функция для авторизации пользователя через invite key
 async function authorizeUserWithInviteKey(telegramId, alias, env) {
-	await env.OPENAI_VK_BOT_DB.put(`authorized_users_tg_id__${telegramId}`, `OPENAI_API_KEY__${alias}`)
+	await env.OPENAI_VK_BOT_DB.put(`authorized_users_tg_id__${telegramId}`, alias)
 }
 
 // Функция для отправки запроса в OpenAI API (ChatGPT) с учётом предыдущего сообщения
