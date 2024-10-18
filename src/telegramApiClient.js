@@ -1,3 +1,5 @@
+const telegramifyMarkdown = require('telegramify-markdown');
+
 export class TelegramApiClient {
 	constructor(token) {
 		this.token = token;
@@ -7,11 +9,12 @@ export class TelegramApiClient {
 	async sendMessage(chatId, text, replyToMessageId = null) {
 		try {
 			const url = `${this.apiUrl}/sendMessage`;
+			const fixedText = telegramifyMarkdown(text, 'escape');
 			const body = {
 				method: 'sendMessage',
 				chat_id: chatId,
-				text: text,
-				//parse_mode: 'MarkdownV2'
+				text: fixedText,
+				parse_mode: 'MarkdownV2'
 			};
 			if (replyToMessageId) {
 				body.reply_to_message_id = replyToMessageId;
