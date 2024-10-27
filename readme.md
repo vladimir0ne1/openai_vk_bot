@@ -16,13 +16,13 @@ Bot database stores at worker KV database.
 3. Manually generate and add invite key to database for specific user alias
     - Format: `authorized_users_invite_key__<invite-key>:<user-alias>`
     - Example: `authorized_users_used_invite_key__XABCD-1234:me`
-4. Send user invite token:
+4. Send invite token to a user:
     - Format: `/token <token>`
     - Example: `/token XABCD-1234`
 
 ### First use
 
-User send invite token to telegram bot (`/token XABCD-1234`)
+User sends invite token to telegram bot (`/token XABCD-1234`)
 If token is valid, bot maps user alias from token and telegram user ID and archives token so it can be used only once.
 
 ### Message from user
