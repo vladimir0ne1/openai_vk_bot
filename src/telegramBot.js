@@ -36,8 +36,8 @@ export default class TelegramBot {
 
   async initContext(request) {
     const incomingData = await request.json();
-    this.tgMessage = incomingData.message;
-    this.user.telegramId = incomingData.message?.from?.id || '';
+    this.tgMessage = incomingData.message || incomingData.edited_message;
+    this.user.telegramId = this.tgMessage?.from?.id || '';
   }
 
   async processChatGpt() {
