@@ -117,17 +117,24 @@ export default class TelegramBot {
   }
 
   async handleError(error) {
+
+    console.error(`${error.name}: ${error.message}`);
+
+    if(this.tgMessage?.chat?.Id){
+      await this.telegramApiClient.sendMessage(this.tgMessage.chat.Id, 'Something went wrong...');
+    }
+
     if (error instanceof UnauthorizedError) {
-      return new Response('Unauthorized', { status: 401 });
+      return new Response('Unauthorized', { status: 200 });
     } else if (error instanceof InvalidRequestMethodError) {
-      return new Response('Invalid Request', { status: 405 });
+      return new Response('Invalid Request', { status: 200 });
     } else if (error instanceof MissingApiKeyError) {
-      return new Response('Missing API key', { status: 500 });
+      return new Response('Missing API key', { status: 200 });
     } else if (error instanceof InvalidInviteTokenError) {
-      return new Response('Invalid Token', { status: 403 });
+      return new Response('Invalid Token', { status: 200 });
     } else {
       console.error('Unexpected error:', error);
-      return new Response('Internal Server Error', { status: 500 });
+      return new Response('Internal Server Error', { status: 200 });
     }
   }
 }
