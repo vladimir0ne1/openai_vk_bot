@@ -11,7 +11,7 @@ export default class TelegramBot {
     this.user = {
       telegramId: undefined,
       alias: undefined,
-      openAiModel: 'gpt-4o-mini' // use by default. todo: add logic to change model in future
+      openAiModel: 'gpt-4o' // use by default. todo: add logic to change model in future
     };
     this.openAIClient = {};
   }
